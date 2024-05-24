@@ -3,11 +3,12 @@ import pandas as pd
 import numpy as np
 import torch
 
+from torch.nn.functional import normalize
 from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
 
 class PBC2DataSet(Dataset):
-    def __init__(self, csvfilename: str = None, parsed_data: list = []):
+    def __init__(self, csvfilename: str = None, tensor_data: tuple = ()):
         self.X = None
         self.y = None
 
@@ -17,14 +18,18 @@ class PBC2DataSet(Dataset):
 
         if csvfilename is not None :
             self.X, self.labels = self.tensor_from_pbc2_csv(csvfilename)
-            
             self.y = torch.FloatTensor(self.labels)
-            self.remove_nan(global_mean=320.)
-            #self.labels_to_onehot()
 
-            # Separate timestamps and data
-            self.X_time     = [x[0] for x in self.X]
-            self.X_series   = [x[1:] for x in self.X]
+        if tensor_data and type(tensor_data[0][0]) == torch._tensor.Tensor :
+            self.X = [normalize(single_tensor) for single_tensor in tensor_data[0]]
+            self.y = tensor_data[1]
+            
+
+        self.remove_nan(global_mean=320.)
+
+        # Separate timestamps and data
+        self.X_time     = [x[0] for x in self.X]
+        self.X_series   = [x[1:] for x in self.X]
 
     def __len__(self):
         return len(self.X)
@@ -85,7 +90,7 @@ class PBC2DataSet(Dataset):
         data = []
         labels = []
 
-        time_features_columns = ['year','serBilir', 'serChol', 'albumin', 'alkaline', 'SGOT', 'platelets', 'prothrombin']
+        time_features_columns = ['year','serBilir', 'albumin', 'alkaline', 'SGOT', 'platelets', 'prothrombin']
 
         for df in df_list:
             # [ 1-d : each row of df, 2-d : each value of row]

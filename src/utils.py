@@ -36,5 +36,12 @@ def collate_fn_pre_padding(batch):
 
     return padded_series, labels
 
+def prepadding_dataframe(df_list: list, max_len: int):
+    df_cols = df_list[0][0].columns.to_list()
+    for i in range(len(df_list)):
+        padd_length = max_len - len(df_list[i][0]['year'])
+        padding_df = pd.DataFrame(0., index=range(padd_length), columns = df_cols)
+        df_list[i][0] = pd.concat([padding_df, df_list[i][0]])
+
 if __name__ == "__main__":
     raise NotImplementedError
